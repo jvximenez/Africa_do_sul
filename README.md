@@ -4,6 +4,6 @@ Site estático com mapa interativo (Leaflet + OpenStreetMap): dias, fases e pont
 
 **Abrir no navegador:** [jvximenez.github.io/Africa_do_sul](https://jvximenez.github.io/Africa_do_sul/)
 
-**Editar:** altere `index.html` (dados em `DAYS`, fotos no campo `img` de cada ponto — hoje usa [Lorem Picsum](https://picsum.photos) com seeds fixas; pode trocar por URLs do seu álbum ou Wikimedia), depois `git add -A && git commit -m "…" && git push`.
+**Editar:** altere `index.html` (dados em `DAYS`, fotos no campo `img` via `wc('Nome exato do ficheiro.jpg')` — títulos reais no [Wikimedia Commons](https://commons.wikimedia.org); `Special:FilePath` exige o nome da página do ficheiro, não um nome inventado). Depois `git add -A && git commit -m "…" && git push`.
 
 Repositório: [github.com/jvximenez/Africa_do_sul](https://github.com/jvximenez/Africa_do_sul)

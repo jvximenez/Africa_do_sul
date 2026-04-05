@@ -26,8 +26,8 @@
 <meta name="twitter:image" content="https://jvximenez.github.io/Africa_do_sul/assets/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://picsum.photos" crossorigin>
-<link rel="dns-prefetch" href="https://fastly.picsum.photos">
+<link rel="preconnect" href="https://commons.wikimedia.org" crossorigin>
+<link rel="preconnect" href="https://upload.wikimedia.org" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -390,8 +390,8 @@ function esc(s) {
     .replace(/"/g,'&quot;');
 }
 
-function placePic(seed) {
-  return 'https://picsum.photos/seed/as26-' + seed + '/900/560';
+function wc(file) {
+  return 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(file);
 }
 
 function escAttr(s) {
@@ -399,10 +399,12 @@ function escAttr(s) {
 }
 
 function largePhoto(url) {
-  return String(url).replace(/\/900\/560\b/, '/1600/1000');
+  var u = String(url);
+  if (u.indexOf('picsum.photos') !== -1) return u.replace(/\/900\/560\b/, '/1600/1000');
+  return u;
 }
 
-const PHOTO_NOTE = 'Imagens de ambiente (stock) · <a href="https://picsum.photos" target="_blank" rel="noopener noreferrer">Lorem Picsum</a>. Substitua por links das <strong>suas</strong> fotos no campo <code style="font-size:9px;opacity:.9">img</code> de cada ponto.';
+const PHOTO_NOTE = 'Fotos do <a href="https://commons.wikimedia.org" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a> — respeite a licença e o crédito indicados na página de cada ficheiro.';
 
 const Ph = {
   safari:   { label:'Safari – Kruger', color:'#e07040' },
@@ -413,60 +415,60 @@ const Ph = {
 
 const DAYS = [
   { id:1, label:'Dia 1', date:'Seg 13 Abr', title:'Partida de SP', phase:'safari', note:'Voo noturno GRU → JNB',
-    pontos:[{ name:'Aeroporto GRU (São Paulo)', lat:-23.4356, lng:-46.4731, info:'Voo GRU→JNB · 22:30h', img:placePic('gru') }] },
+    pontos:[{ name:'Aeroporto GRU (São Paulo)', lat:-23.4356, lng:-46.4731, info:'Voo GRU→JNB · 22:30h', img:wc('ViewfromAir-SaoPaulo.jpg') }] },
   { id:2, label:'Dia 2', date:'Ter 14 Abr', title:'Johanesburgo', phase:'safari', note:'Chegada e descanso',
-    pontos:[{ name:'Johanesburgo (JNB)', lat:-26.2041, lng:28.0473, info:'Chegada 11:55 · Radisson Blu Sandton', img:placePic('jnb') }] },
+    pontos:[{ name:'Johanesburgo (JNB)', lat:-26.2041, lng:28.0473, info:'Chegada 11:55 · Radisson Blu Sandton', img:wc('Qantas A380 at OR Tambo International Airport February 2025.jpg') }] },
   { id:3, label:'Dias 3–5', date:'Qua–Sex 15–17 Abr', title:'Safari no Kruger', phase:'safari', note:'Big Five · Hotel Moditlo · 3 noites',
     pontos:[
-      { name:'Hoedspruit', lat:-24.3500, lng:30.9500, info:'Voo JNB→HPR 12:30 → 13:30', img:placePic('hoed') },
-      { name:'Parque Nacional Kruger', lat:-23.9884, lng:31.5547, info:'Big Five · leão, leopardo, elefante, búfalo, rinoceronte', img:placePic('kruger') }
+      { name:'Hoedspruit', lat:-24.3500, lng:30.9500, info:'Voo JNB→HPR 12:30 → 13:30', img:wc('Hoedspruit, South Africa (Unsplash 8cg0rd8M5D0).jpg') },
+      { name:'Parque Nacional Kruger', lat:-23.9884, lng:31.5547, info:'Big Five · leão, leopardo, elefante, búfalo, rinoceronte', img:wc('Kruger National Park (ZA), Löwe -- 2024 -- 0845.jpg') }
     ]},
   { id:4, label:'Dia 6', date:'Sáb 18 Abr', title:'Chegada Cape Town', phase:'capetown', note:'Voo + jantar com vista',
     pontos:[
-      { name:'Aeroporto Cape Town (CPT)', lat:-33.9715, lng:18.6021, info:'Voo HPR→CPT 14:10 → 16:55', img:placePic('cpt-in') },
-      { name:'V&A Waterfront', lat:-33.9067, lng:18.4207, info:'Por do sol + jantar · Radisson Foreshore', img:placePic('waterfront') }
+      { name:'Aeroporto Cape Town (CPT)', lat:-33.9715, lng:18.6021, info:'Voo HPR→CPT 14:10 → 16:55', img:wc('Cape Town International Airport Departures Area.jpg') },
+      { name:'V&A Waterfront', lat:-33.9067, lng:18.4207, info:'Por do sol + jantar · Radisson Foreshore', img:wc('Waterfront - Clocktower (Cape Town).jpg') }
     ]},
   { id:5, label:'Dia 7', date:'Dom 19 Abr', title:"Lion's Head + Stellenbosch", phase:'capetown', note:'Trilha ao nascer do sol + vinícolas',
     pontos:[
-      { name:"Lion's Head", lat:-33.9350, lng:18.3890, info:'Trilha ao nascer do sol · vista 360° de CT', img:placePic('lions') },
-      { name:'Stellenbosch', lat:-33.9349, lng:18.8560, info:'Vinícolas + almoço · Rust en Vrede', img:placePic('wine') }
+      { name:"Lion's Head", lat:-33.9350, lng:18.3890, info:'Trilha ao nascer do sol · vista 360° de CT', img:wc("Lion's Head from Signal Hill.jpg") },
+      { name:'Stellenbosch', lat:-33.9349, lng:18.8560, info:'Vinícolas + almoço · Rust en Vrede', img:wc('Hartenberg Wine Estate, Stellenbosch, South Africa.jpg') }
     ]},
   { id:6, label:'Dia 8', date:'Seg 20 Abr', title:'Península do Cabo', phase:'capetown', note:'Dia completo na Península',
     pontos:[
-      { name:"Chapman's Peak Drive", lat:-34.0883, lng:18.3594, info:'Drive costeiro · uma das mais belas do mundo', img:placePic('chappies') },
-      { name:'Cabo da Boa Esperança', lat:-34.3568, lng:18.4740, info:'Ponto mais ao sudoeste da África', img:placePic('capepoint') },
-      { name:"Boulder's Beach", lat:-34.1956, lng:18.4504, info:'Colônia de pinguins africanos', img:placePic('penguins') },
-      { name:'Kirstenbosch (opcional)', lat:-33.9869, lng:18.4321, info:'Jardim botânico nacional · UNESCO', img:placePic('garden-bot') }
+      { name:"Chapman's Peak Drive", lat:-34.0883, lng:18.3594, info:'Drive costeiro · uma das mais belas do mundo', img:wc('Chapmans Peak Drive 3.jpg') },
+      { name:'Cabo da Boa Esperança', lat:-34.3568, lng:18.4740, info:'Ponto mais ao sudoeste da África', img:wc('Cape of Good Hope from Cape Point.jpg') },
+      { name:"Boulder's Beach", lat:-34.1956, lng:18.4504, info:'Colônia de pinguins africanos', img:wc('African penguins at Boulders Beach.jpg') },
+      { name:'Kirstenbosch (opcional)', lat:-33.9869, lng:18.4321, info:'Jardim botânico nacional · UNESCO', img:wc('Kirstenbosch National Botanical Garden, Cape Town ( 1060047).jpg') }
     ]},
   { id:7, label:'Dia 9', date:'Ter 21 Abr', title:'Table Mountain + George', phase:'garden', note:'Início da Garden Route · 5h de drive',
     pontos:[
-      { name:'Table Mountain', lat:-33.9668, lng:18.4256, info:'Teleférico ou trilha · ícone de Cape Town', img:placePic('table') },
-      { name:'George', lat:-33.9778, lng:22.4953, info:'Pernoite · The Hawthorn Boutique', img:placePic('george') }
+      { name:'Table Mountain', lat:-33.9668, lng:18.4256, info:'Teleférico ou trilha · ícone de Cape Town', img:wc('Table Mountain from Signal Hill.jpg') },
+      { name:'George', lat:-33.9778, lng:22.4953, info:'Pernoite · The Hawthorn Boutique', img:wc('Outeniqua Transport Museum - Garden Route, South Africa (3918502693).jpg') }
     ]},
   { id:8, label:'Dia 10', date:'Qua 22 Abr', title:'Plettenberg Bay', phase:'garden', note:'Focas, lagoa e trilha na costa',
     pontos:[
-      { name:'Knysna Heads', lat:-34.0768, lng:23.0623, info:'Parada recomendada · ostras frescas', img:placePic('knysna') },
-      { name:'Mergulho com Focas', lat:-34.0620, lng:23.3714, info:'Plettenberg Bay · Get Your Guide', img:placePic('seal') },
-      { name:'Robberg Nature Reserve', lat:-34.1040, lng:23.3956, info:'Trilha de 9km com leões-marinhos', img:placePic('robberg') }
+      { name:'Knysna Heads', lat:-34.0768, lng:23.0623, info:'Parada recomendada · ostras frescas', img:wc('Knysna (ZA), Knysna River, East and West Head -- 2024 -- 2456.jpg') },
+      { name:'Mergulho com Focas', lat:-34.0620, lng:23.3714, info:'Plettenberg Bay · Get Your Guide', img:wc('Arctocephalus pusillus (Cape fur seals).jpg') },
+      { name:'Robberg Nature Reserve', lat:-34.1040, lng:23.3956, info:'Trilha de 9km com leões-marinhos', img:wc('Bosluiskop (ZA), Robberg Nature Reserve, Strand -- 2024 -- 2166.jpg') }
     ]},
   { id:9, label:'Dia 11', date:'Qui 23 Abr', title:'Tsitsikamma + Oudtshoorn', phase:'garden', note:'Bungee + trilha + rota para o interior',
     pontos:[
-      { name:'Bloukrans Bungee', lat:-33.9653, lng:23.6476, info:'216m – maior bungee do mundo!', img:placePic('bungee') },
-      { name:'Tsitsikamma – Storms River', lat:-34.0118, lng:24.0165, info:'Suspension bridge + trilha na floresta', img:placePic('storms') },
-      { name:'Port Elizabeth (Gqeberha)', lat:-33.9137, lng:25.5827, info:'Deixar amiga + almoço', img:placePic('gqeberha') },
-      { name:'Oudtshoorn', lat:-33.5953, lng:22.2010, info:'Pernoite · A reservar ⚠️', img:placePic('ostrich') }
+      { name:'Bloukrans Bungee', lat:-33.9653, lng:23.6476, info:'216m – maior bungee do mundo!', img:wc('Bloukrans Bungee Bridge.jpg') },
+      { name:'Tsitsikamma – Storms River', lat:-34.0118, lng:24.0165, info:'Suspension bridge + trilha na floresta', img:wc('Storms River Bridge (N2)-001.jpg') },
+      { name:'Port Elizabeth (Gqeberha)', lat:-33.9137, lng:25.5827, info:'Deixar amiga + almoço', img:wc('ISS067-E-54068 Gqeberha, nee Port Elizabeth, South Africa, crop1.jpg') },
+      { name:'Oudtshoorn', lat:-33.5953, lng:22.2010, info:'Pernoite · A reservar ⚠️', img:wc('Oudtshoorn Ostrich Farm 01.jpg') }
     ]},
   { id:10, label:'Dia 12', date:'Sex 24 Abr', title:'Meerkats + Cango Caves', phase:'extra', note:'Sunrise wildlife + cavernas + volta a CT',
     pontos:[
-      { name:'Five Shy Meerkats 🦡', lat:-33.5800, lng:22.1500, info:'Sunrise 5:30h · R660/pessoa · reservar!', img:placePic('meerkat') },
-      { name:'Cango Caves', lat:-33.3922, lng:22.2144, info:'Sistema de cavernas · ~2h de tour', img:placePic('cave') },
-      { name:'Outeniqua Pass', lat:-33.8300, lng:22.3900, info:'Passagem cênica montanhosa (~4h até CT)', img:placePic('pass') },
-      { name:'Cape Town', lat:-33.9249, lng:18.4241, info:'Pernoite · A reservar ⚠️', img:placePic('ct-night') }
+      { name:'Five Shy Meerkats 🦡', lat:-33.5800, lng:22.1500, info:'Sunrise 5:30h · R660/pessoa · reservar!', img:wc('Meerkat (Suricata suricatta) Tswalu.jpg') },
+      { name:'Cango Caves', lat:-33.3922, lng:22.2144, info:'Sistema de cavernas · ~2h de tour', img:wc('Inside Cango Caves.jpg') },
+      { name:'Outeniqua Pass', lat:-33.8300, lng:22.3900, info:'Passagem cênica montanhosa (~4h até CT)', img:wc('Outeniqua Pass01.jpg') },
+      { name:'Cape Town', lat:-33.9249, lng:18.4241, info:'Pernoite · A reservar ⚠️', img:wc('Cape Town CBD and harbor in morning light from Table Mountain slopes.jpg') }
     ]},
   { id:11, label:'Dia 13', date:'Sáb 25 Abr', title:'Volta para o Brasil', phase:'extra', note:'Manhã livre + voo 12:50h',
     pontos:[
-      { name:'Manhã livre em Cape Town', lat:-33.9249, lng:18.4241, info:'Camps Bay · V&A Waterfront', img:placePic('camps') },
-      { name:'Aeroporto Cape Town ✈️', lat:-33.9715, lng:18.6021, info:'Voo 12:50h · De volta ao Brasil!', img:placePic('cpt-out') }
+      { name:'Manhã livre em Cape Town', lat:-33.9249, lng:18.4241, info:'Camps Bay · V&A Waterfront', img:wc('Cape Town (ZA), Table Mountain, Blick auf Camps Bay -- 2024 -- 2750.jpg') },
+      { name:'Aeroporto Cape Town ✈️', lat:-33.9715, lng:18.6021, info:'Voo 12:50h · De volta ao Brasil!', img:wc('Cape Town International Airport Departures Area.jpg') }
     ]}
 ];
 
