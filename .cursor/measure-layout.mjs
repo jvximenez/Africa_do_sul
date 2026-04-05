@@ -3,7 +3,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { chromium } from 'playwright';
+import { chromium, devices } from 'playwright';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -30,11 +30,11 @@ const url = `http://127.0.0.1:${port}/index.html`;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({
-  viewport: { width: 390, height: 844 },
-  deviceScaleFactor: 2,
+  ...devices['iPhone 13'],
 });
-await page.goto(url, { waitUntil: 'load', timeout: 120000 });
-await page.waitForTimeout(1200);
+await page.goto(url, { waitUntil: 'networkidle', timeout: 120000 });
+await page.waitForSelector('.leaflet-container', { timeout: 60000 }).catch(() => {});
+await page.waitForTimeout(400);
 
 const m = await page.evaluate(() => {
   const mw = document.getElementById('map-wrap');
