@@ -295,6 +295,8 @@ body {
 .leaflet-popup-tip { background:var(--card)!important; }
 .leaflet-control-attribution { background:rgba(12,12,19,0.82)!important; color:rgba(255,255,255,0.28)!important; font-size:9px!important; padding:2px 6px!important; border-radius:4px!important; margin:8px!important; }
 .leaflet-control-attribution a { color:rgba(255,255,255,0.38)!important; }
+.leaflet-route-road { stroke-linecap:round; stroke-linejoin:round; }
+.leaflet-route-air { stroke-linecap:round; stroke-linejoin:round; }
 .leaflet-control-zoom { border:none!important; margin:10px calc(10px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) 0!important; }
 .leaflet-control-zoom a { background:rgba(18,18,25,0.94)!important; color:var(--text)!important; border-color:var(--border-md)!important; }
 .pop-thumb {
@@ -453,6 +455,7 @@ body {
   <footer class="site-ft">
     <a href="https://github.com/jvximenez/Africa_do_sul" rel="noopener noreferrer" target="_blank">Código no GitHub</a>
     · mapa © OpenStreetMap
+    · <span id="route-attrib" title="Trechos de carro seguem estradas (OSRM demo); voos em linha tracejada">rotas: estrada + voo</span>
   </footer>
 </aside>
 <div id="map-wrap">
@@ -558,8 +561,29 @@ const DAYS = [
     ]}
 ];
 
-const SA_LATLNGS = DAYS.filter(d => d.id > 1).flatMap(d => d.pontos.map(p => [p.lat, p.lng]));
 const SA_BOUNDS = L.latLngBounds([[-35.5,16.5],[-22,33]]);
+
+/**
+ * Trechos em ordem da viagem (só África do Sul + voos internos).
+ * drive = OSRM segue estradas; fly = linha reta (voo / salto entre dias).
+ */
+const ROUTE_LEGS = [
+  { mode:'fly',   coords:[[-26.2041,28.0473],[-24.3500,30.9500]] },
+  { mode:'drive', coords:[[-24.3500,30.9500],[-23.9884,31.5547]] },
+  { mode:'fly',   coords:[[-23.9884,31.5547],[-33.9715,18.6021]] },
+  { mode:'drive', coords:[[-33.9715,18.6021],[-33.9067,18.4207]] },
+  { mode:'drive', coords:[[-33.9067,18.4207],[-33.9350,18.3890]] },
+  { mode:'drive', coords:[[-33.9350,18.3890],[-33.9349,18.8560]] },
+  { mode:'drive', coords:[[-33.9349,18.8560],[-34.0883,18.3594]] },
+  { mode:'drive', coords:[[-34.0883,18.3594],[-34.3568,18.4740],[-34.1956,18.4504],[-33.9869,18.4321]] },
+  { mode:'drive', coords:[[-33.9869,18.4321],[-33.9668,18.4256]] },
+  { mode:'drive', coords:[[-33.9668,18.4256],[-33.9778,22.4953]] },
+  { mode:'drive', coords:[[-33.9778,22.4953],[-34.0768,23.0623],[-34.0620,23.3714],[-34.1040,23.3956]] },
+  { mode:'drive', coords:[[-34.1040,23.3956],[-33.9653,23.6476]] },
+  { mode:'drive', coords:[[-33.9653,23.6476],[-34.0118,24.0165],[-33.9137,25.5827],[-33.5953,22.2010]] },
+  { mode:'drive', coords:[[-33.5953,22.2010],[-33.5800,22.1500],[-33.3922,22.2144],[-33.8300,22.3900],[-33.9249,18.4241]] },
+  { mode:'drive', coords:[[-33.9249,18.4241],[-33.9715,18.6021]] }
+];
 
 const map = L.map('map', { zoomControl:false }).fitBounds(SA_BOUNDS, { padding:[40,40] });
 
@@ -569,7 +593,56 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 L.control.zoom({ position:'bottomright' }).addTo(map);
-L.polyline(SA_LATLNGS, { color:'rgba(201,169,110,0.45)', weight:2.5, dashArray:'6,8', lineCap:'round' }).addTo(map);
+
+var routeLayerGroup = L.layerGroup().addTo(map);
+
+function straightLatLngs(coords) {
+  return coords.map(function (c) { return L.latLng(c[0], c[1]); });
+}
+
+function fetchOsrmDriving(coords) {
+  if (coords.length < 2) return Promise.resolve(null);
+  var path = coords.map(function (c) { return c[1] + ',' + c[0]; }).join(';');
+  var url = 'https://router.project-osrm.org/route/v1/driving/' + encodeURI(path) + '?overview=full&geometries=geojson';
+  return fetch(url).then(function (r) {
+    if (!r.ok) return null;
+    return r.json();
+  }).then(function (j) {
+    if (!j || j.code !== 'Ok' || !j.routes || !j.routes[0] || !j.routes[0].geometry) return null;
+    return j.routes[0].geometry.coordinates.map(function (pt) { return [pt[1], pt[0]]; });
+  }).catch(function () { return null; });
+}
+
+function addRouteLeg(leg) {
+  if (leg.mode === 'fly') {
+    L.polyline(straightLatLngs(leg.coords), {
+      color:'rgba(130,140,185,0.42)',
+      weight:2,
+      dashArray:'6,10',
+      lineCap:'round',
+      className:'leaflet-route-air'
+    }).addTo(routeLayerGroup);
+    return Promise.resolve();
+  }
+  return fetchOsrmDriving(leg.coords).then(function (latlngs) {
+    var pts = latlngs && latlngs.length >= 2 ? latlngs : leg.coords;
+    L.polyline(pts, {
+      color:'rgba(201,169,110,0.88)',
+      weight:3,
+      lineCap:'round',
+      lineJoin:'round',
+      className:'leaflet-route-road'
+    }).addTo(routeLayerGroup);
+  });
+}
+
+ROUTE_LEGS.reduce(function (p, leg) {
+  return p.then(function () { return addRouteLeg(leg); });
+}, Promise.resolve()).then(function () {
+  map.invalidateSize();
+  var el = document.getElementById('route-attrib');
+  if (el) el.textContent = 'rotas: carro (OSRM) · voo (tracejado)';
+});
 
 function mkIcon(color) {
   return L.divIcon({
