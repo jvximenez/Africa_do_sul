@@ -934,7 +934,7 @@ document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () =>
       }).join('')}
     </div>`).join('');
   c.querySelectorAll('.g-row').forEach(r => {
-    const go = () => { switchTab('dias'); selectDay(parseInt(r.dataset.id, 10)); };
+    const go = () => { selectDay(parseInt(r.dataset.id, 10)); };
     r.addEventListener('click', go);
     r.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
   });
