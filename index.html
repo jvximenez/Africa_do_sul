@@ -28,6 +28,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://commons.wikimedia.org" crossorigin>
 <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin>
+<link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -331,23 +332,39 @@ body {
 }
 .lightbox-x:hover { border-color:var(--accent); background:var(--card-hover); }
 
-/* MOBILE — mapa fixo no topo, roteiro ocupa o resto; toque e leitura confortáveis */
+/* Previsão (Por dia) */
+.d-wx {
+  display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px;
+  margin:0 0 10px; padding:8px 0 0;
+  font-size:11px; color:var(--text-soft); line-height:1.35;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+.d-wx .d-wx-main { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.d-wx .d-wx-ico { font-size:15px; line-height:1; }
+.d-wx .d-wx-temp { font-weight:500; color:var(--text); font-variant-numeric:tabular-nums; }
+.d-wx .d-wx-meta { color:var(--muted); font-size:10px; }
+.d-wx.d-wx--pending { color:var(--muted); }
+.d-wx.d-wx--err { color:var(--muted); font-size:10px; }
+.g-wx {
+  display:inline-block; margin-left:6px; vertical-align:baseline;
+  font-size:10px; color:var(--muted); font-variant-numeric:tabular-nums;
+}
+
+/* MOBILE — máximo de área útil: header enxuto, fotos baixas, paddings mínimos */
 @media (max-width: 640px) {
-  :root { --sidebar: 100%; }
+  :root { --sidebar: 100%; --radius: 8px; }
   #app {
     flex-direction: column-reverse;
     height: 100dvh;
     min-height: -webkit-fill-available;
   }
-  /* Mapa: faixa estável (não “metade da tela” genérica) */
   #map-wrap {
     flex: 0 0 auto;
-    height: clamp(200px, 36dvh, 300px);
-    max-height: 42vh;
+    height: clamp(152px, 28dvh, 220px);
+    max-height: 32vh;
     border-bottom: 1px solid var(--border);
     padding-right: 0;
   }
-  /* Painel do roteiro: cresce e rola por dentro */
   #sidebar {
     flex: 1 1 0;
     min-height: 0;
@@ -359,71 +376,139 @@ body {
     padding-left: 0;
   }
   #hdr {
-    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+    padding: calc(6px + env(safe-area-inset-top)) 10px 8px;
+    border-bottom-color: rgba(255,255,255,0.05);
   }
-  #hdr h1 { font-size: clamp(20px, 5.2vw, 24px); }
-  .meta { gap: 6px; margin-top: 8px; }
-  .stat { padding: 8px 6px; }
-  .stat .val { font-size: 15px; }
-  .tabs { padding: 0 4px; gap: 0; }
+  #hdr::before { opacity: 0.22; }
+  .eyebrow { display: none; }
+  #hdr h1 { font-size: 1.05rem; line-height: 1.2; letter-spacing: -0.02em; }
+  .meta { gap: 4px; margin-top: 6px; }
+  .stat {
+    padding: 4px 2px;
+    border-radius: 4px;
+    background: rgba(25,25,35,0.65);
+  }
+  .stat .val { font-size: 13px; }
+  .stat .key { font-size: 7px; letter-spacing: 0.5px; margin-top: 0; }
+  .tabs { padding: 0 2px; gap: 0; border-bottom-color: rgba(255,255,255,0.05); }
   .tab {
-    font-size: 10px;
-    letter-spacing: 0.45px;
-    padding: 14px 6px;
-    min-height: 48px;
+    font-size: 9px;
+    letter-spacing: 0.35px;
+    padding: 10px 4px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 4px 4px 0 0;
   }
+  .tab.on::after { left: 6%; right: 6%; height: 2px; }
   .pane { overscroll-behavior: contain; }
-  /* Pills dos dias: carrossel horizontal em vez de várias linhas */
   .d-pills {
     flex-wrap: nowrap;
     overflow-x: auto;
     overflow-y: hidden;
-    gap: 8px;
-    padding: 12px 14px;
+    gap: 6px;
+    padding: 8px 10px;
     -webkit-overflow-scrolling: touch;
-    scroll-padding-inline: 14px;
+    scroll-padding-inline: 10px;
     scrollbar-width: none;
+    border-bottom-color: rgba(255,255,255,0.05);
   }
   .d-pills::-webkit-scrollbar { display: none; }
   .pill {
     flex-shrink: 0;
-    padding: 8px 14px;
-    min-height: 36px;
-    font-size: 11px;
+    padding: 6px 11px;
+    min-height: 32px;
+    font-size: 10px;
+    border-radius: 16px;
   }
-  .g-phase, .l-section { padding-left: 16px; padding-right: 16px; }
+  .g-phase, .l-section {
+    padding: 8px 10px 4px;
+    font-size: 8px;
+    letter-spacing: 0.85px;
+  }
   .g-row {
-    padding: 10px 14px;
-    margin-right: 4px;
+    padding: 7px 10px;
+    margin-right: 0;
     gap: 8px;
+    border-radius: 0;
   }
-  .g-row .num { width: 38px; }
-  .g-row .ttl { white-space: normal; line-height: 1.3; }
-  .d-hero { margin-bottom: 14px; }
-  .d-hero-img { height: clamp(150px, 32vw, 200px); }
-  .d-detail-body { padding-left: 16px; padding-right: 16px; }
-  .pcard-visual { max-height: 220px; }
+  .g-row.on { border-right-width: 2px; }
+  .g-row .num { width: 34px; font-size: 9px; }
+  .g-row .ttl { font-size: 11px; line-height: 1.3; }
+  .g-row .dt { font-size: 9px; }
+  .g-thumb-wrap {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+  }
+  .d-detail { padding-bottom: 14px; }
+  .d-hero {
+    margin: 0 0 10px;
+    min-height: 0;
+    max-height: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+  .d-hero-img { height: clamp(88px, 24vw, 118px); }
+  .d-hero-text { padding: 8px 10px 10px; }
+  .d-hero .d-phase-tag { margin-bottom: 3px; font-size: 8px; }
+  .d-hero .d-ttl { font-size: 1rem; margin-bottom: 2px; }
+  .d-hero .d-date { font-size: 10px; }
+  .d-hero .d-note { margin-top: 4px; font-size: 10px; line-height: 1.35; }
+  .d-detail-body { padding-left: 10px; padding-right: 10px; }
+  .d-detail-top { margin-bottom: 10px; padding-bottom: 8px; }
+  .d-ttl { font-size: 17px; }
+  .d-date { font-size: 10px; }
+  .d-note { font-size: 10px; margin-top: 4px; }
+  .d-wx { margin-bottom: 8px; padding-top: 6px; font-size: 10px; gap: 4px 8px; }
+  .d-wx .d-wx-ico { font-size: 14px; }
+  .d-wx .d-wx-meta { font-size: 9px; }
+  .pcard {
+    margin-bottom: 8px;
+    border-color: rgba(255,255,255,0.05);
+    border-radius: var(--radius);
+  }
+  .pcard-visual {
+    aspect-ratio: 2 / 1;
+    max-height: 112px;
+  }
+  .pcard-in { padding: 8px 10px 10px; }
+  .pcard .pname { font-size: 12px; margin-bottom: 3px; }
+  .pcard .pinfo { font-size: 10px; padding-left: 10px; line-height: 1.4; }
+  .pcard-phase-bar { height: 2px; }
   .pcard-enlarge {
-    width: 44px;
-    height: 44px;
-    bottom: 10px;
-    right: 10px;
+    width: 40px;
+    height: 40px;
+    bottom: 6px;
+    right: 6px;
   }
-  .l-item { padding: 12px 16px; gap: 10px; }
-  .l-thumb { width: 52px; height: 52px; }
-  .l-name { font-size: 13px; }
+  .l-item { padding: 8px 10px; gap: 8px; }
+  .l-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  }
+  .l-name { font-size: 11px; }
+  .l-meta { font-size: 9px; margin-top: 2px; }
   .map-btn {
-    top: calc(10px + env(safe-area-inset-top));
-    right: calc(10px + env(safe-area-inset-right));
-    padding: 11px 16px;
-    min-height: 44px;
-    font-size: 12px;
+    top: calc(6px + env(safe-area-inset-top));
+    right: calc(6px + env(safe-area-inset-right));
+    padding: 8px 12px;
+    min-height: 40px;
+    font-size: 11px;
+    border-radius: 18px;
   }
-  .site-ft { padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); font-size: 9px; }
-  .lightbox img { max-height: 72dvh; max-width: 100vw; }
+  .site-ft {
+    padding: 5px 8px calc(6px + env(safe-area-inset-bottom));
+    font-size: 8px;
+    line-height: 1.35;
+    border-top-color: rgba(255,255,255,0.05);
+  }
+  .lightbox img { max-height: 70dvh; max-width: 100vw; }
+  .pop-thumb { height: 72px; }
+  .g-wx { display:block; margin-left:0; margin-top:2px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -456,6 +541,7 @@ body {
     <a href="https://github.com/jvximenez/Africa_do_sul" rel="noopener noreferrer" target="_blank">Código no GitHub</a>
     · mapa © OpenStreetMap
     · <span id="route-attrib" title="Trechos de carro seguem estradas (OSRM demo); voos em linha tracejada">rotas: estrada + voo</span>
+    · tempo <a href="https://open-meteo.com" rel="noopener noreferrer" target="_blank">Open-Meteo</a>
   </footer>
 </aside>
 <div id="map-wrap">
@@ -503,63 +589,195 @@ const Ph = {
 };
 
 const DAYS = [
-  { id:1, label:'Dia 1', date:'Seg 13 Abr', title:'Partida de SP', phase:'safari', note:'Voo noturno GRU → JNB',
+  { id:1, wxDate:'2026-04-13', wxTz:'America/Sao_Paulo', label:'Dia 1', date:'Seg 13 Abr', title:'Partida de SP', phase:'safari', note:'Voo noturno GRU → JNB',
     pontos:[{ name:'Aeroporto GRU (São Paulo)', lat:-23.4356, lng:-46.4731, info:'Voo GRU→JNB · 22:30h', img:wc('ViewfromAir-SaoPaulo.jpg') }] },
-  { id:2, label:'Dia 2', date:'Ter 14 Abr', title:'Johanesburgo', phase:'safari', note:'Chegada e descanso',
+  { id:2, wxDate:'2026-04-14', label:'Dia 2', date:'Ter 14 Abr', title:'Johanesburgo', phase:'safari', note:'Chegada e descanso',
     pontos:[{ name:'Johanesburgo (JNB)', lat:-26.2041, lng:28.0473, info:'Chegada 11:55 · Radisson Blu Sandton', img:wc('Qantas A380 at OR Tambo International Airport February 2025.jpg') }] },
-  { id:3, label:'Dias 3–5', date:'Qua–Sex 15–17 Abr', title:'Safari no Kruger', phase:'safari', note:'Big Five · Hotel Moditlo · 3 noites',
+  { id:3, wxDate:'2026-04-16', label:'Dias 3–5', date:'Qua–Sex 15–17 Abr', title:'Safari no Kruger', phase:'safari', note:'Big Five · Hotel Moditlo · 3 noites',
     pontos:[
       { name:'Hoedspruit', lat:-24.3500, lng:30.9500, info:'Voo JNB→HPR 12:30 → 13:30', img:wc('Hoedspruit, South Africa (Unsplash 8cg0rd8M5D0).jpg') },
       { name:'Parque Nacional Kruger', lat:-23.9884, lng:31.5547, info:'Big Five · leão, leopardo, elefante, búfalo, rinoceronte', img:wc('Kruger National Park (ZA), Löwe -- 2024 -- 0845.jpg') }
     ]},
-  { id:4, label:'Dia 6', date:'Sáb 18 Abr', title:'Chegada Cape Town', phase:'capetown', note:'Voo + jantar com vista',
+  { id:4, wxDate:'2026-04-18', label:'Dia 6', date:'Sáb 18 Abr', title:'Chegada Cape Town', phase:'capetown', note:'Voo + jantar com vista',
     pontos:[
       { name:'Aeroporto Cape Town (CPT)', lat:-33.9715, lng:18.6021, info:'Voo HPR→CPT 14:10 → 16:55', img:wc('Cape Town International Airport Departures Area.jpg') },
       { name:'V&A Waterfront', lat:-33.9067, lng:18.4207, info:'Por do sol + jantar · Radisson Foreshore', img:wc('Waterfront - Clocktower (Cape Town).jpg') }
     ]},
-  { id:5, label:'Dia 7', date:'Dom 19 Abr', title:"Lion's Head + Stellenbosch", phase:'capetown', note:'Trilha ao nascer do sol + vinícolas',
+  { id:5, wxDate:'2026-04-19', label:'Dia 7', date:'Dom 19 Abr', title:"Lion's Head + Stellenbosch", phase:'capetown', note:'Trilha ao nascer do sol + vinícolas',
     pontos:[
       { name:"Lion's Head", lat:-33.9350, lng:18.3890, info:'Trilha ao nascer do sol · vista 360° de CT', img:wc("Lion's Head from Signal Hill.jpg") },
       { name:'Stellenbosch', lat:-33.9349, lng:18.8560, info:'Vinícolas + almoço · Rust en Vrede', img:wc('Hartenberg Wine Estate, Stellenbosch, South Africa.jpg') }
     ]},
-  { id:6, label:'Dia 8', date:'Seg 20 Abr', title:'Península do Cabo', phase:'capetown', note:'Dia completo na Península',
+  { id:6, wxDate:'2026-04-20', label:'Dia 8', date:'Seg 20 Abr', title:'Península do Cabo', phase:'capetown', note:'Dia completo na Península',
     pontos:[
       { name:"Chapman's Peak Drive", lat:-34.0883, lng:18.3594, info:'Drive costeiro · uma das mais belas do mundo', img:wc('Chapmans Peak Drive 3.jpg') },
       { name:'Cabo da Boa Esperança', lat:-34.3568, lng:18.4740, info:'Ponto mais ao sudoeste da África', img:wc('Cape of Good Hope from Cape Point.jpg') },
       { name:"Boulder's Beach", lat:-34.1956, lng:18.4504, info:'Colônia de pinguins africanos', img:wc('African penguins at Boulders Beach.jpg') },
       { name:'Kirstenbosch (opcional)', lat:-33.9869, lng:18.4321, info:'Jardim botânico nacional · UNESCO', img:wc('Kirstenbosch National Botanical Garden, Cape Town ( 1060047).jpg') }
     ]},
-  { id:7, label:'Dia 9', date:'Ter 21 Abr', title:'Table Mountain + George', phase:'garden', note:'Início da Garden Route · 5h de drive',
+  { id:7, wxDate:'2026-04-21', label:'Dia 9', date:'Ter 21 Abr', title:'Table Mountain + George', phase:'garden', note:'Início da Garden Route · 5h de drive',
     pontos:[
       { name:'Table Mountain', lat:-33.9668, lng:18.4256, info:'Teleférico ou trilha · ícone de Cape Town', img:wc('Table Mountain from Signal Hill.jpg') },
       { name:'George', lat:-33.9778, lng:22.4953, info:'Pernoite · The Hawthorn Boutique', img:wc('Outeniqua Transport Museum - Garden Route, South Africa (3918502693).jpg') }
     ]},
-  { id:8, label:'Dia 10', date:'Qua 22 Abr', title:'Plettenberg Bay', phase:'garden', note:'Focas, lagoa e trilha na costa',
+  { id:8, wxDate:'2026-04-22', label:'Dia 10', date:'Qua 22 Abr', title:'Plettenberg Bay', phase:'garden', note:'Focas, lagoa e trilha na costa',
     pontos:[
       { name:'Knysna Heads', lat:-34.0768, lng:23.0623, info:'Parada recomendada · ostras frescas', img:wc('Knysna (ZA), Knysna River, East and West Head -- 2024 -- 2456.jpg') },
       { name:'Mergulho com Focas', lat:-34.0620, lng:23.3714, info:'Plettenberg Bay · Get Your Guide', img:wc('Arctocephalus pusillus (Cape fur seals).jpg') },
       { name:'Robberg Nature Reserve', lat:-34.1040, lng:23.3956, info:'Trilha de 9km com leões-marinhos', img:wc('Bosluiskop (ZA), Robberg Nature Reserve, Strand -- 2024 -- 2166.jpg') }
     ]},
-  { id:9, label:'Dia 11', date:'Qui 23 Abr', title:'Tsitsikamma + Oudtshoorn', phase:'garden', note:'Bungee + trilha + rota para o interior',
+  { id:9, wxDate:'2026-04-23', label:'Dia 11', date:'Qui 23 Abr', title:'Tsitsikamma + Oudtshoorn', phase:'garden', note:'Bungee + trilha + rota para o interior',
     pontos:[
       { name:'Bloukrans Bungee', lat:-33.9653, lng:23.6476, info:'216m – maior bungee do mundo!', img:wc('Bloukrans Bungee Bridge.jpg') },
       { name:'Tsitsikamma – Storms River', lat:-34.0118, lng:24.0165, info:'Suspension bridge + trilha na floresta', img:wc('Storms River Bridge (N2)-001.jpg') },
       { name:'Port Elizabeth (Gqeberha)', lat:-33.9137, lng:25.5827, info:'Deixar amiga + almoço', img:wc('ISS067-E-54068 Gqeberha, nee Port Elizabeth, South Africa, crop1.jpg') },
-      { name:'Oudtshoorn', lat:-33.5953, lng:22.2010, info:'Pernoite · A reservar ⚠️', img:wc('Oudtshoorn Ostrich Farm 01.jpg') }
+      { name:'Oudtshoorn', lat:-33.5953, lng:22.2010, phase:'extra', info:'Pernoite · A reservar ⚠️', img:wc('Oudtshoorn Ostrich Farm 01.jpg') }
     ]},
-  { id:10, label:'Dia 12', date:'Sex 24 Abr', title:'Meerkats + Cango Caves', phase:'extra', note:'Sunrise wildlife + cavernas + volta a CT',
+  { id:10, wxDate:'2026-04-24', label:'Dia 12', date:'Sex 24 Abr', title:'Meerkats + Cango Caves', phase:'extra', note:'Sunrise wildlife + cavernas + volta a CT',
     pontos:[
       { name:'Five Shy Meerkats 🦡', lat:-33.5800, lng:22.1500, info:'Sunrise 5:30h · R660/pessoa · reservar!', img:wc('Meerkat (Suricata suricatta) Tswalu.jpg') },
       { name:'Cango Caves', lat:-33.3922, lng:22.2144, info:'Sistema de cavernas · ~2h de tour', img:wc('Inside Cango Caves.jpg') },
       { name:'Outeniqua Pass', lat:-33.8300, lng:22.3900, info:'Passagem cênica montanhosa (~4h até CT)', img:wc('Outeniqua Pass01.jpg') },
       { name:'Cape Town', lat:-33.9249, lng:18.4241, info:'Pernoite · A reservar ⚠️', img:wc('Cape Town CBD and harbor in morning light from Table Mountain slopes.jpg') }
     ]},
-  { id:11, label:'Dia 13', date:'Sáb 25 Abr', title:'Volta para o Brasil', phase:'extra', note:'Manhã livre + voo 12:50h',
+  { id:11, wxDate:'2026-04-25', label:'Dia 13', date:'Sáb 25 Abr', title:'Volta para o Brasil', phase:'extra', note:'Manhã livre + voo 12:50h',
     pontos:[
       { name:'Manhã livre em Cape Town', lat:-33.9249, lng:18.4241, info:'Camps Bay · V&A Waterfront', img:wc('Cape Town (ZA), Table Mountain, Blick auf Camps Bay -- 2024 -- 2750.jpg') },
       { name:'Aeroporto Cape Town ✈️', lat:-33.9715, lng:18.6021, info:'Voo 12:50h · De volta ao Brasil!', img:wc('Cape Town International Airport Departures Area.jpg') }
     ]}
 ];
+
+const weatherByDayId = {};
+
+function wxEmoji(code) {
+  var c = Number(code);
+  if (c === 0) return '☀️';
+  if (c <= 3) return '⛅';
+  if (c <= 48) return '🌫️';
+  if (c <= 57) return '🌦️';
+  if (c <= 67) return '🌧️';
+  if (c <= 77) return '🌨️';
+  if (c <= 82) return '🌧️';
+  if (c <= 86) return '🌨️';
+  if (c <= 99) return '⛈️';
+  return '☁️';
+}
+
+function wxLabelPt(code) {
+  var c = Number(code);
+  if (c === 0) return 'Céu limpo';
+  if (c === 1) return 'Pred. limpo';
+  if (c === 2) return 'Parcialmente nublado';
+  if (c === 3) return 'Nublado';
+  if (c <= 48) return 'Nevoeiro';
+  if (c <= 57) return 'Garoa ou chuva fraca';
+  if (c <= 67) return 'Chuva';
+  if (c <= 77) return 'Neve';
+  if (c <= 82) return 'Pancadas de chuva';
+  if (c <= 86) return 'Pancadas de neve';
+  if (c <= 99) return 'Trovoada';
+  return 'Variável';
+}
+
+function wxBlockHtml(dayId) {
+  return '<div class="d-wx d-wx--pending" data-wx-day="' + dayId + '" aria-live="polite"></div>';
+}
+
+function fetchOpenMeteoDay(day) {
+  var p0 = day.pontos && day.pontos[0];
+  if (!p0 || !day.wxDate) {
+    weatherByDayId[day.id] = { err: true, reason: 'no-data' };
+    return Promise.resolve();
+  }
+  var tz = day.wxTz ? encodeURIComponent(day.wxTz) : 'Africa%2FJohannesburg';
+  var u = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(p0.lat)
+    + '&longitude=' + encodeURIComponent(p0.lng)
+    + '&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+    + '&timezone=' + tz
+    + '&start_date=' + encodeURIComponent(day.wxDate)
+    + '&end_date=' + encodeURIComponent(day.wxDate);
+  return fetch(u)
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) {
+      if (!j || !j.daily || !j.daily.time || j.daily.time.length === 0) {
+        weatherByDayId[day.id] = { err: true, reason: 'empty' };
+        return;
+      }
+      var i = 0;
+      var wc = j.daily.weathercode[i];
+      var tmax = j.daily.temperature_2m_max[i];
+      var tmin = j.daily.temperature_2m_min[i];
+      var pop = j.daily.precipitation_probability_max != null ? j.daily.precipitation_probability_max[i] : null;
+      weatherByDayId[day.id] = {
+        err: false,
+        code: wc,
+        emoji: wxEmoji(wc),
+        label: wxLabelPt(wc),
+        tmax: tmax,
+        tmin: tmin,
+        pop: pop,
+        date: day.wxDate
+      };
+    })
+    .catch(function () {
+      weatherByDayId[day.id] = { err: true, reason: 'net' };
+    });
+}
+
+function wxCompactLine(dayId) {
+  var w = weatherByDayId[dayId];
+  if (!w || w.err) return '';
+  var hi = Math.round(w.tmax);
+  var lo = Math.round(w.tmin);
+  return w.emoji + ' ' + (lo === hi ? hi + '°' : lo + '–' + hi + '°');
+}
+
+function fillWxDetailEl(el, dayId) {
+  if (!el) return;
+  var day = DAYS.find(function (d) { return d.id === dayId; });
+  var w = weatherByDayId[dayId];
+  if (w === undefined) {
+    el.className = 'd-wx d-wx--pending';
+    el.innerHTML = '<span class="d-wx-main">Carregando previsão…</span>';
+    return;
+  }
+  if (!w || w.err) {
+    el.className = 'd-wx d-wx--err';
+    el.innerHTML = '<span class="d-wx-main">Previsão indisponível (horizonte do modelo ~16 dias ou rede).</span>';
+    return;
+  }
+  el.className = 'd-wx';
+  var tmp = Math.round(w.tmin) === Math.round(w.tmax)
+    ? '<span class="d-wx-temp">' + Math.round(w.tmax) + '°C</span>'
+    : '<span class="d-wx-temp">' + Math.round(w.tmin) + '° / ' + Math.round(w.tmax) + '°C</span>';
+  var popStr = (w.pop != null && w.pop > 0)
+    ? ' · chuva máx. ' + Math.round(w.pop) + '%'
+    : '';
+  var dStr = day && day.wxDate ? day.wxDate : w.date;
+  el.innerHTML = '<div class="d-wx-main"><span class="d-wx-ico" aria-hidden="true">' + w.emoji + '</span>' + tmp + '</div>'
+    + '<span class="d-wx-meta">' + esc(w.label) + ' · ' + esc(dStr) + popStr + '</span>';
+}
+
+function applyWeatherToGeral() {
+  DAYS.forEach(function (d) {
+    var el = document.querySelector('.g-wx[data-g-wx="' + d.id + '"]');
+    if (!el) return;
+    var line = wxCompactLine(d.id);
+    el.textContent = line ? line : '';
+    el.title = line ? ('Previsão ' + d.wxDate + ': ' + line) : '';
+  });
+}
+
+function refreshVisibleWeather() {
+  applyWeatherToGeral();
+  var body = document.getElementById('d-body');
+  if (!body) return;
+  var wxEl = body.querySelector('.d-wx[data-wx-day]');
+  if (wxEl) {
+    var id = parseInt(wxEl.getAttribute('data-wx-day'), 10);
+    if (!isNaN(id)) fillWxDetailEl(wxEl, id);
+  }
+}
 
 const SA_BOUNDS = L.latLngBounds([[-35.5,16.5],[-22,33]]);
 
@@ -652,16 +870,21 @@ function mkIcon(color) {
   });
 }
 
+function phaseKey(day, p) {
+  return (p && p.phase) || day.phase;
+}
+
 DAYS.forEach(day => {
-  const color = Ph[day.phase].color;
   day.pontos.forEach(p => {
+    const pk = phaseKey(day, p);
+    const color = Ph[pk].color;
     const m = L.marker([p.lat, p.lng], { icon:mkIcon(color) });
     const popImg = p.img
       ? `<img class="pop-thumb" src="${escAttr(p.img)}" alt="${escAttr(p.name)}" loading="lazy" width="240" height="108"/>`
       : '';
     m.bindPopup(
       popImg +
-      `<div class="pop-phase" style="color:${color}">${esc(Ph[day.phase].label)} · ${esc(day.label)}</div>` +
+      `<div class="pop-phase" style="color:${color}">${esc(Ph[pk].label)} · ${esc(day.label)}</div>` +
       `<div class="pop-name">${esc(p.name)}</div><div class="pop-info">${esc(p.info)}</div>` +
       `<div class="pop-credit">${PHOTO_NOTE}</div>`,
       { maxWidth:280 }
@@ -702,7 +925,7 @@ document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () =>
         const th = hi ? `<div class="g-thumb-wrap"><img class="g-thumb" src="${escAttr(d.pontos[0].img)}" alt="" loading="lazy" width="44" height="44"/></div>` : '';
         return `<div class="g-row" data-id="${d.id}" tabindex="0" role="button">
           <span class="num">${esc(d.label)}</span>${th}
-          <div class="body"><div class="ttl">${esc(d.title)}</div><div class="dt">${esc(d.date)}</div></div>
+          <div class="body"><div class="ttl">${esc(d.title)}</div><div class="dt">${esc(d.date)}<span class="g-wx" data-g-wx="${d.id}"></span></div></div>
           <div class="dot" style="background:${Ph[d.phase].color}"></div>
         </div>`;
       }).join('')}
@@ -744,6 +967,7 @@ function selectDay(id) {
           <div class="d-ttl">${esc(day.title)}</div>
           <div class="d-date">${esc(day.date)}</div>
           ${day.note ? `<div class="d-note">${esc(day.note)}</div>` : ''}
+          ${wxBlockHtml(day.id)}
         </div>
       </div>` : `<div class="d-detail-body" style="padding-top:16px"><div class="d-detail-top">
         <div class="d-phase-tag" style="color:${color}">
@@ -753,20 +977,22 @@ function selectDay(id) {
         <div class="d-ttl">${esc(day.title)}</div>
         <div class="d-date">${esc(day.date)}</div>
         ${day.note ? `<div class="d-note">${esc(day.note)}</div>` : ''}
+        ${wxBlockHtml(day.id)}
       </div></div>`}
       <div class="d-detail-body">
       ${day.pontos.map(p => {
+        const pColor = Ph[phaseKey(day, p)].color;
         const src = p.img ? escAttr(p.img) : '';
         const full = p.img ? escAttr(largePhoto(p.img)) : '';
         const vis = p.img
           ? `<div class="pcard-visual"><img class="pcard-img" src="${src}" alt="${escAttr(p.name)}" loading="lazy" width="640" height="360"/><button type="button" class="pcard-enlarge" aria-label="Ampliar foto"><span aria-hidden="true" style="font-size:18px;line-height:1;font-weight:300">+</span></button></div>`
           : '';
         return `<div class="pcard" data-lat="${p.lat}" data-lng="${p.lng}" data-fullimg="${full}" data-pname="${escAttr(p.name)}" tabindex="0" role="button">
-          <div class="pcard-phase-bar" style="background:${color}"></div>
+          <div class="pcard-phase-bar" style="background:${pColor}"></div>
           ${vis}
           <div class="pcard-in">
             <div class="pname">
-              <span style="width:5px;height:5px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:${pColor};display:inline-block;flex-shrink:0"></span>
               ${esc(p.name)}
             </div>
             <div class="pinfo">${esc(p.info)}</div>
@@ -800,6 +1026,8 @@ function selectDay(id) {
         });
       }
     });
+    var wxEl = body.querySelector('.d-wx[data-wx-day="' + day.id + '"]');
+    fillWxDetailEl(wxEl, day.id);
   }
 
   const pts = day.pontos.filter(p => p.lat > -36 && p.lng > 15);
@@ -817,7 +1045,9 @@ function selectDay(id) {
 (function() {
   const c = document.getElementById('pane-lista');
   c.innerHTML = ['safari','capetown','garden','extra'].map(ph => {
-    const items = DAYS.filter(d => d.phase === ph).flatMap(d => d.pontos.map(p => ({ ...p, lbl:d.label })));
+    const items = DAYS.flatMap(d => d.pontos
+      .filter(p => phaseKey(d, p) === ph)
+      .map(p => ({ ...p, lbl:d.label })));
     return `<div class="l-section ${ph}">${esc(Ph[ph].label)}</div>
       ${items.map(p => {
         const thumb = p.img
@@ -866,6 +1096,8 @@ function openLightbox(url, title) {
 })();
 
 selectDay(DAYS[0].id);
+
+Promise.all(DAYS.map(fetchOpenMeteoDay)).then(refreshVisibleWeather);
 
 window.addEventListener('load', () => map.invalidateSize());
 var _mapResizeT;
