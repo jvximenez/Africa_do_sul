@@ -784,6 +784,21 @@ function refreshVisibleWeather() {
 
 const SA_BOUNDS = L.latLngBounds([[-35.5,16.5],[-22,33]]);
 
+/** Zoom ao escolher dia/local no roteiro (Leaflet; ~15 ≈ área de bairro). */
+const MAP_ZOOM_SPOT = 15;
+const MAP_ZOOM_DAY_BOUNDS_MAX = 16;
+const MAP_DAY_BOUNDS_PAD = 48;
+
+/** Margem em graus à volta dos pontos do dia (proporcional: perto = mais zoom). */
+function padDegForPointCluster(lats, lngs) {
+  const minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+  const minLng = Math.min.apply(null, lngs), maxLng = Math.max.apply(null, lngs);
+  const latSpan = Math.max(maxLat - minLat, 1e-6);
+  const lngSpan = Math.max(maxLng - minLng, 1e-6);
+  const span = Math.max(latSpan, lngSpan);
+  return Math.min(0.22, Math.max(span * 0.38, 0.0035));
+}
+
 /**
  * Trechos em ordem da viagem (só África do Sul + voos internos).
  * drive = OSRM segue estradas; fly = linha reta (voo / salto entre dias).
@@ -869,7 +884,9 @@ function mkIcon(color) {
   return L.divIcon({
     className:'leaflet-marker-dot',
     html:`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.45)"></div>`,
-    iconSize:[14,14], iconAnchor:[7,7], popupAnchor:[0,-12]
+    iconSize:[14,14], iconAnchor:[7,7],
+    /* Popup abre por baixo do ponto: em mobile o mapa é uma faixa no topo e overflow:hidden cortava o cartão. */
+    popupAnchor:[0,14]
   });
 }
 
@@ -890,7 +907,14 @@ DAYS.forEach(day => {
       `<div class="pop-phase" style="color:${color}">${esc(Ph[pk].label)} · ${esc(day.label)}</div>` +
       `<div class="pop-name">${esc(p.name)}</div><div class="pop-info">${esc(p.info)}</div>` +
       `<div class="pop-credit">${PHOTO_NOTE}</div>`,
-      { maxWidth:280 }
+      {
+        maxWidth:280,
+        keepInView:true,
+        autoPan:true,
+        autoPanPadding:L.point(16, 16),
+        autoPanPaddingTopLeft:L.point(20, 72),
+        autoPanPaddingBottomRight:L.point(20, 88)
+      }
     );
     m.on('click', () => { switchTab('dias'); selectDay(day.id); });
     m.addTo(map);
@@ -1009,7 +1033,7 @@ function selectDay(id) {
       const activate = () => {
         body.querySelectorAll('.pcard').forEach(c => c.classList.remove('on'));
         card.classList.add('on');
-        map.flyTo([parseFloat(card.dataset.lat), parseFloat(card.dataset.lng)], 12, { duration:1.2 });
+        map.flyTo([parseFloat(card.dataset.lat), parseFloat(card.dataset.lng)], MAP_ZOOM_SPOT, { duration:1.2 });
       };
       card.addEventListener('click', activate);
       card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
@@ -1035,12 +1059,15 @@ function selectDay(id) {
 
   const pts = day.pontos.filter(p => p.lat > -36 && p.lng > 15);
   if (pts.length === 1) {
-    map.flyTo([pts[0].lat, pts[0].lng], 10, { duration:1.2 });
+    map.flyTo([pts[0].lat, pts[0].lng], MAP_ZOOM_SPOT, { duration:1.2 });
   } else if (pts.length > 1) {
     const lats = pts.map(p => p.lat), lngs = pts.map(p => p.lng);
+    const p = padDegForPointCluster(lats, lngs);
+    const minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+    const minLng = Math.min.apply(null, lngs), maxLng = Math.max.apply(null, lngs);
     map.flyToBounds(
-      L.latLngBounds([[Math.min(...lats)-.4, Math.min(...lngs)-.4],[Math.max(...lats)+.4, Math.max(...lngs)+.4]]),
-      { padding:[80,80], duration:1.2, maxZoom:12 }
+      L.latLngBounds([[minLat - p, minLng - p], [maxLat + p, maxLng + p]]),
+      { padding:[MAP_DAY_BOUNDS_PAD, MAP_DAY_BOUNDS_PAD], duration:1.2, maxZoom:MAP_ZOOM_DAY_BOUNDS_MAX }
     );
   }
 }
@@ -1065,7 +1092,7 @@ function selectDay(id) {
   c.querySelectorAll('.l-item').forEach(item => {
     const go = () => {
       const lat = parseFloat(item.dataset.lat), lng = parseFloat(item.dataset.lng);
-      if (lat > -36 && lng > 15) map.flyTo([lat, lng], 12, { duration:1.2 });
+      if (lat > -36 && lng > 15) map.flyTo([lat, lng], MAP_ZOOM_SPOT, { duration:1.2 });
     };
     item.addEventListener('click', go);
     item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
