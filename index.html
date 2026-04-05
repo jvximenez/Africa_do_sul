@@ -1105,6 +1105,107 @@ window.addEventListener('resize', function () {
   clearTimeout(_mapResizeT);
   _mapResizeT = setTimeout(function () { map.invalidateSize(); }, 120);
 });
+
+// #region agent log
+(function debugLayout839891() {
+  var END = 'http://127.0.0.1:7452/ingest/3b0b65c5-f73e-4783-a936-72a2ccadeaaf';
+  function dbg(loc, msg, data, hypothesisId) {
+    fetch(END, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '839891' }, body: JSON.stringify({ sessionId: '839891', runId: 'pre-fix', location: loc, message: msg, data: data || {}, timestamp: Date.now(), hypothesisId: hypothesisId || '' }) }).catch(function () {});
+  }
+  function measure() {
+    var app = document.getElementById('app');
+    var mw = document.getElementById('map-wrap');
+    var mEl = document.getElementById('map');
+    var hdr = document.getElementById('hdr');
+    var ft = document.querySelector('.site-ft');
+    var sb = document.getElementById('sidebar');
+    var lc = mEl ? mEl.querySelector('.leaflet-container') : null;
+    var mwRect = mw ? mw.getBoundingClientRect() : null;
+    var hdrRect = hdr ? hdr.getBoundingClientRect() : null;
+    var gapMapHdr = mwRect && hdrRect ? hdrRect.top - mwRect.bottom : null;
+    var innerH = window.innerHeight;
+    var appRect = app ? app.getBoundingClientRect() : null;
+    var vv = window.visualViewport;
+    dbg('index.html:debugLayout', 'map-vs-leaflet', {
+      mapWrapOffsetH: mw ? mw.offsetHeight : null,
+      mapOffsetH: mEl ? mEl.offsetHeight : null,
+      leafletOffsetH: lc ? lc.offsetHeight : null,
+      innerGap: mw && lc ? mw.offsetHeight - lc.offsetHeight : null
+    }, 'H1');
+    dbg('index.html:debugLayout', 'map-wrap-to-hdr', {
+      gapMapHdr: gapMapHdr,
+      mapWrapBottom: mwRect ? mwRect.bottom : null,
+      hdrTop: hdrRect ? hdrRect.top : null
+    }, 'H2');
+    dbg('index.html:debugLayout', 'viewport-footer', {
+      webAppStandalone: typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches,
+      iosNavigatorStandalone: typeof navigator !== 'undefined' && !!navigator.standalone,
+      innerH: innerH,
+      vvH: vv ? vv.height : null,
+      vvOffsetTop: vv ? vv.offsetTop : null,
+      appBottom: appRect ? appRect.bottom : null,
+      gapBelowApp: appRect ? innerH - appRect.bottom : null,
+      footerBottom: ft ? ft.getBoundingClientRect().bottom : null,
+      gapBelowFooter: ft ? innerH - ft.getBoundingClientRect().bottom : null,
+      safeAreaBottom: (function () {
+        var t = document.createElement('div');
+        t.style.cssText = 'position:fixed;bottom:0;left:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none';
+        document.body.appendChild(t);
+        var h = t.offsetHeight;
+        document.body.removeChild(t);
+        return h;
+      })()
+    }, 'H3-H4');
+    var pane = document.getElementById('pane-dias');
+    var pills = pane ? pane.querySelector('.d-pills') : null;
+    var hero = pane ? pane.querySelector('.d-hero') : null;
+    if (pane && pills && hero) {
+      var pr = pills.getBoundingClientRect();
+      var hr = hero.getBoundingClientRect();
+      var zP = getComputedStyle(pills).zIndex;
+      var zH = getComputedStyle(hero).zIndex;
+      dbg('index.html:debugLayout', 'pills-hero-stack', {
+        paneHidden: pane.hidden,
+        paneOn: pane.classList.contains('on'),
+        pillsTop: pr.top,
+        pillsBottom: pr.bottom,
+        heroTop: hr.top,
+        heroBottom: hr.bottom,
+        verticalOverlap: hr.bottom > pr.top && hr.top < pr.bottom,
+        zPills: zP,
+        zHero: zH
+      }, 'H5');
+    }
+    if (sb) {
+      var sbr = sb.getBoundingClientRect();
+      dbg('index.html:debugLayout', 'sidebar-heights', {
+        sidebarBottom: sbr.bottom,
+        innerH: innerH,
+        gapBelowSidebar: innerH - sbr.bottom,
+        paneScrollH: pane ? pane.scrollHeight : null,
+        paneClientH: pane ? pane.clientHeight : null
+      }, 'H3');
+    }
+  }
+  var origSwitch = switchTab;
+  switchTab = function (tab) {
+    origSwitch(tab);
+    if (tab === 'dias') requestAnimationFrame(function () { requestAnimationFrame(measure); });
+  };
+  window.addEventListener('load', function () {
+    requestAnimationFrame(function () { requestAnimationFrame(measure); });
+  });
+  window.addEventListener('resize', function () {
+    clearTimeout(window._dbg839891rt);
+    window._dbg839891rt = setTimeout(measure, 160);
+  });
+  var pd = document.getElementById('pane-dias');
+  if (pd) pd.addEventListener('scroll', function () {
+    clearTimeout(window._dbg839891sc);
+    window._dbg839891sc = setTimeout(measure, 80);
+  }, { passive: true });
+})();
+// #endregion
 </script>
 </body>
 </html>
