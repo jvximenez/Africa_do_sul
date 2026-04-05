@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roteiro África do Sul 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --bg:#0c0c13; --surface:#121219; --card:#191923; --card-hover:#1f1f2c;
+  --border:rgba(255,255,255,0.06); --border-md:rgba(255,255,255,0.11);
+  --text:#ede9e2; --text-soft:#a09caf; --muted:#5e5a6e;
+  --accent:#c9a96e; --accent-glow:rgba(201,169,110,0.15); --accent-dim:rgba(201,169,110,0.08);
+  --c-safari:#e07040; --c-capetown:#5b9fd4; --c-garden:#52b788; --c-extra:#c9a96e;
+  --sidebar:300px; --radius:8px;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { height:100%; }
+body { height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'DM Sans',system-ui,sans-serif; }
+
+#app { display:flex; width:100%; height:100%; }
+
+/* SIDEBAR */
+#sidebar {
+  width:var(--sidebar); min-width:var(--sidebar);
+  display:flex; flex-direction:column;
+  background:var(--surface); border-right:1px solid var(--border);
+  overflow:hidden; height:100%;
+}
+
+/* MAP */
+#map-wrap { flex:1; position:relative; overflow:hidden; height:100%; }
+#map { width:100%; height:100%; }
+
+/* HEADER */
+#hdr { padding:18px 18px 14px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.eyebrow { font-size:10px; font-weight:500; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+#hdr h1 { font-family:'Cormorant Garamond',Georgia,serif; font-size:24px; font-weight:400; line-height:1.15; }
+#hdr h1 em { font-style:italic; color:var(--accent); }
+.meta { display:flex; gap:8px; margin-top:10px; }
+.stat { text-align:center; flex:1; background:var(--card); border-radius:6px; padding:6px 4px; }
+.stat .val { font-size:16px; font-weight:500; font-family:'Cormorant Garamond',serif; }
+.stat .key { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-top:1px; }
+
+/* TABS */
+.tabs { display:flex; border-bottom:1px solid var(--border); padding:0 6px; flex-shrink:0; }
+.tab { flex:1; background:none; border:none; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:11px; font-weight:500; letter-spacing:0.6px; text-transform:uppercase; padding:11px 4px; cursor:pointer; position:relative; transition:color 0.15s; }
+.tab:hover { color:var(--text-soft); }
+.tab.on { color:var(--accent); }
+.tab.on::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:1px; background:var(--accent); }
+
+/* PANES */
+.pane { display:none; flex:1; overflow-y:auto; min-height:0; }
+.pane.on { display:block; }
+.pane::-webkit-scrollbar { width:3px; }
+.pane::-webkit-scrollbar-thumb { background:var(--border-md); border-radius:2px; }
+
+/* GERAL */
+.g-phase { font-size:9px; font-weight:500; letter-spacing:1.1px; text-transform:uppercase; color:var(--muted); padding:14px 18px 6px; display:flex; align-items:center; gap:6px; }
+.g-phase::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.g-phase.safari::before { background:var(--c-safari); }
+.g-phase.capetown::before { background:var(--c-capetown); }
+.g-phase.garden::before { background:var(--c-garden); }
+.g-phase.extra::before { background:var(--c-extra); }
+.g-row { display:flex; align-items:center; gap:10px; padding:7px 18px; cursor:pointer; transition:background 0.12s; }
+.g-row:hover { background:var(--card); }
+.g-row.on { background:var(--accent-dim); border-right:2px solid var(--accent); }
+.g-row .num { font-size:10px; color:var(--muted); width:42px; flex-shrink:0; }
+.g-row .body { flex:1; min-width:0; }
+.g-row .ttl { font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.g-row .dt { font-size:10px; color:var(--muted); margin-top:1px; }
+.g-row .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+/* DIAS */
+.d-pills { display:flex; flex-wrap:wrap; gap:4px; padding:12px 14px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:2; }
+.pill { font-size:10px; font-weight:500; padding:3px 9px; border-radius:20px; border:1px solid var(--border-md); background:transparent; color:var(--muted); cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif; }
+.pill:hover { border-color:var(--accent); color:var(--text-soft); }
+.pill.on { background:var(--accent); border-color:var(--accent); color:#0c0c13; }
+.d-detail { padding:16px 18px; }
+.d-detail-top { margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+.d-phase-tag { font-size:9px; font-weight:500; letter-spacing:0.8px; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.d-ttl { font-family:'Cormorant Garamond',Georgia,serif; font-size:21px; font-weight:400; line-height:1.2; margin-bottom:2px; }
+.d-date { font-size:11px; color:var(--muted); }
+.d-note { font-size:11px; color:var(--text-soft); font-style:italic; margin-top:6px; }
+.pcard { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; margin-bottom:7px; cursor:pointer; transition:border-color 0.12s, background 0.12s; }
+.pcard:hover { background:var(--card-hover); border-color:var(--border-md); }
+.pcard.on { border-color:var(--accent); background:var(--accent-dim); }
+.pcard .pname { font-size:12px; font-weight:500; display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+.pcard .pinfo { font-size:11px; color:var(--muted); padding-left:11px; line-height:1.4; }
+
+/* LISTA */
+.l-section { font-size:9px; font-weight:500; letter-spacing:1.1px; text-transform:uppercase; color:var(--muted); padding:14px 18px 6px; display:flex; align-items:center; gap:6px; }
+.l-section::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.l-section.safari::before { background:var(--c-safari); }
+.l-section.capetown::before { background:var(--c-capetown); }
+.l-section.garden::before { background:var(--c-garden); }
+.l-section.extra::before { background:var(--c-extra); }
+.l-item { display:flex; align-items:flex-start; gap:10px; padding:8px 18px; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.12s; }
+.l-item:hover { background:var(--card); }
+.l-dot { width:6px; height:6px; border-radius:50%; margin-top:4px; flex-shrink:0; }
+.l-name { font-size:12px; line-height:1.3; }
+.l-meta { font-size:10px; color:var(--muted); margin-top:2px; }
+
+/* MAP BUTTONS */
+.map-btn { position:absolute; z-index:1000; background:rgba(18,18,25,0.92); border:1px solid var(--border-md); color:var(--text-soft); font-size:11px; font-family:'DM Sans',sans-serif; font-weight:500; padding:7px 13px; border-radius:20px; cursor:pointer; transition:all 0.15s; }
+.map-btn:hover { color:var(--text); border-color:var(--accent); }
+#btn-reset { top:14px; right:14px; }
+
+/* LEAFLET OVERRIDES */
+.leaflet-popup-content-wrapper { background:var(--card)!important; border:1px solid var(--border-md); border-radius:var(--radius)!important; box-shadow:0 8px 32px rgba(0,0,0,0.6)!important; color:var(--text)!important; }
+.leaflet-popup-content { margin:12px 14px!important; }
+.leaflet-popup-tip { background:var(--card)!important; }
+.leaflet-control-attribution { background:rgba(12,12,19,0.75)!important; color:rgba(255,255,255,0.25)!important; font-size:9px!important; }
+.leaflet-control-attribution a { color:rgba(255,255,255,0.3)!important; }
+.leaflet-control-zoom a { background:rgba(18,18,25,0.92)!important; color:var(--text)!important; border-color:var(--border-md)!important; }
+.pop-phase { font-size:9px; font-weight:500; letter-spacing:0.8px; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+.pop-name { font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:500; margin-bottom:3px; line-height:1.2; }
+.pop-info { font-size:11px; color:var(--text-soft); line-height:1.4; }
+
+/* MOBILE */
+@media (max-width: 640px) {
+  :root { --sidebar: 100%; }
+  #app { flex-direction:column; }
+  #sidebar { width:100%; min-width:100%; height:50%; flex-shrink:0; }
+  #map-wrap { height:50%; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="sidebar">
+  <div id="hdr">
+    <div class="eyebrow">Roteiro de viagem</div>
+    <h1>África do <em>Sul</em></h1>
+    <div class="meta">
+      <div class="stat"><div class="val">13</div><div class="key">dias</div></div>
+      <div class="stat"><div class="val">4</div><div class="key">fases</div></div>
+      <div class="stat"><div class="val">18</div><div class="key">locais</div></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-tab="geral">Geral</button>
+    <button class="tab" data-tab="dias">Por Dia</button>
+    <button class="tab" data-tab="lista">Lista</button>
+  </div>
+  <div id="pane-geral" class="pane on"></div>
+  <div id="pane-dias" class="pane"></div>
+  <div id="pane-lista" class="pane"></div>
+</aside>
+<div id="map-wrap">
+  <div id="map"></div>
+  <button class="map-btn" id="btn-reset">↩ Visão geral</button>
+</div>
+</div>
+
+<script>
+const Ph = {
+  safari:   { label:'Safari – Kruger', color:'#e07040' },
+  capetown: { label:'Cape Town',       color:'#5b9fd4' },
+  garden:   { label:'Garden Route',    color:'#52b788' },
+  extra:    { label:'Grupo – Extras',  color:'#c9a96e' }
+};
+
+const DAYS = [
+  { id:1, label:'Dia 1', date:'Seg 13 Abr', title:'Partida de SP', phase:'safari', note:'Voo noturno GRU → JNB',
+    pontos:[{ name:'Aeroporto GRU (São Paulo)', lat:-23.4356, lng:-46.4731, info:'Voo GRU→JNB · 22:30h' }] },
+  { id:2, label:'Dia 2', date:'Ter 14 Abr', title:'Johanesburgo', phase:'safari', note:'Chegada e descanso',
+    pontos:[{ name:'Johanesburgo (JNB)', lat:-26.2041, lng:28.0473, info:'Chegada 11:55 · Radisson Blu Sandton' }] },
+  { id:3, label:'Dias 3–5', date:'Qua–Sex 15–17 Abr', title:'Safari no Kruger', phase:'safari', note:'Big Five · Hotel Moditlo · 3 noites',
+    pontos:[
+      { name:'Hoedspruit', lat:-24.3500, lng:30.9500, info:'Voo JNB→HPR 12:30 → 13:30' },
+      { name:'Parque Nacional Kruger', lat:-23.9884, lng:31.5547, info:'Big Five · leão, leopardo, elefante, búfalo, rinoceronte' }
+    ]},
+  { id:4, label:'Dia 6', date:'Sáb 18 Abr', title:'Chegada Cape Town', phase:'capetown', note:'Voo + jantar com vista',
+    pontos:[
+      { name:'Aeroporto Cape Town (CPT)', lat:-33.9715, lng:18.6021, info:'Voo HPR→CPT 14:10 → 16:55' },
+      { name:'V&A Waterfront', lat:-33.9067, lng:18.4207, info:'Por do sol + jantar · Radisson Foreshore' }
+    ]},
+  { id:5, label:'Dia 7', date:'Dom 19 Abr', title:"Lion's Head + Stellenbosch", phase:'capetown', note:'Trilha ao nascer do sol + vinícolas',
+    pontos:[
+      { name:"Lion's Head", lat:-33.9350, lng:18.3890, info:'Trilha ao nascer do sol · vista 360° de CT' },
+      { name:'Stellenbosch', lat:-33.9349, lng:18.8560, info:'Vinícolas + almoço · Rust en Vrede' }
+    ]},
+  { id:6, label:'Dia 8', date:'Seg 20 Abr', title:'Península do Cabo', phase:'capetown', note:'Dia completo na Península',
+    pontos:[
+      { name:"Chapman's Peak Drive", lat:-34.0883, lng:18.3594, info:'Drive costeiro · uma das mais belas do mundo' },
+      { name:'Cabo da Boa Esperança', lat:-34.3568, lng:18.4740, info:'Ponto mais ao sudoeste da África' },
+      { name:"Boulder's Beach", lat:-34.1956, lng:18.4504, info:'Colônia de pinguins africanos' },
+      { name:'Kirstenbosch (opcional)', lat:-33.9869, lng:18.4321, info:'Jardim botânico nacional · UNESCO' }
+    ]},
+  { id:7, label:'Dia 9', date:'Ter 21 Abr', title:'Table Mountain + George', phase:'garden', note:'Início da Garden Route · 5h de drive',
+    pontos:[
+      { name:'Table Mountain', lat:-33.9668, lng:18.4256, info:'Teleférico ou trilha · ícone de Cape Town' },
+      { name:'George', lat:-33.9778, lng:22.4953, info:'Pernoite · The Hawthorn Boutique' }
+    ]},
+  { id:8, label:'Dia 10', date:'Qua 22 Abr', title:'Plettenberg Bay', phase:'garden', note:'Focas, lagoa e trilha na costa',
+    pontos:[
+      { name:'Knysna Heads', lat:-34.0768, lng:23.0623, info:'Parada recomendada · ostras frescas' },
+      { name:'Mergulho com Focas', lat:-34.0620, lng:23.3714, info:'Plettenberg Bay · Get Your Guide' },
+      { name:'Robberg Nature Reserve', lat:-34.1040, lng:23.3956, info:'Trilha de 9km com leões-marinhos' }
+    ]},
+  { id:9, label:'Dia 11', date:'Qui 23 Abr', title:'Tsitsikamma + Oudtshoorn', phase:'garden', note:'Bungee + trilha + rota para o interior',
+    pontos:[
+      { name:'Bloukrans Bungee', lat:-33.9653, lng:23.6476, info:'216m – maior bungee do mundo!' },
+      { name:'Tsitsikamma – Storms River', lat:-34.0118, lng:24.0165, info:'Suspension bridge + trilha na floresta' },
+      { name:'Port Elizabeth (Gqeberha)', lat:-33.9137, lng:25.5827, info:'Deixar amiga + almoço' },
+      { name:'Oudtshoorn', lat:-33.5953, lng:22.2010, info:'Pernoite · A reservar ⚠️' }
+    ]},
+  { id:10, label:'Dia 12', date:'Sex 24 Abr', title:'Meerkats + Cango Caves', phase:'extra', note:'Sunrise wildlife + cavernas + volta a CT',
+    pontos:[
+      { name:'Five Shy Meerkats 🦡', lat:-33.5800, lng:22.1500, info:'Sunrise 5:30h · R660/pessoa · reservar!' },
+      { name:'Cango Caves', lat:-33.3922, lng:22.2144, info:'Sistema de cavernas · ~2h de tour' },
+      { name:'Outeniqua Pass', lat:-33.8300, lng:22.3900, info:'Passagem cênica montanhosa (~4h até CT)' },
+      { name:'Cape Town', lat:-33.9249, lng:18.4241, info:'Pernoite · A reservar ⚠️' }
+    ]},
+  { id:11, label:'Dia 13', date:'Sáb 25 Abr', title:'Volta para o Brasil', phase:'extra', note:'Manhã livre + voo 12:50h',
+    pontos:[
+      { name:'Manhã livre em Cape Town', lat:-33.9249, lng:18.4241, info:'Camps Bay · V&A Waterfront' },
+      { name:'Aeroporto Cape Town ✈️', lat:-33.9715, lng:18.6021, info:'Voo 12:50h · De volta ao Brasil!' }
+    ]}
+];
+
+const SA_LATLNGS = DAYS.filter(d => d.id > 1).flatMap(d => d.pontos.map(p => [p.lat, p.lng]));
+const SA_BOUNDS = L.latLngBounds([[-35.5,16.5],[-22,33]]);
+
+// ── MAP ──
+const map = L.map('map', { zoomControl:false }).fitBounds(SA_BOUNDS, { padding:[40,40] });
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom:19
+}).addTo(map);
+
+L.control.zoom({ position:'bottomright' }).addTo(map);
+L.polyline(SA_LATLNGS, { color:'rgba(201,169,110,0.4)', weight:2, dashArray:'5,7' }).addTo(map);
+
+function mkIcon(color) {
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:13px;height:13px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.5)"></div>`,
+    iconSize:[13,13], iconAnchor:[6,6], popupAnchor:[0,-10]
+  });
+}
+
+DAYS.forEach(day => {
+  const color = Ph[day.phase].color;
+  day.pontos.forEach(p => {
+    const m = L.marker([p.lat, p.lng], { icon:mkIcon(color) });
+    m.bindPopup(`<div class="pop-phase" style="color:${color}">${Ph[day.phase].label} · ${day.label}</div><div class="pop-name">${p.name}</div><div class="pop-info">${p.info}</div>`, { maxWidth:230 });
+    m.on('click', () => { switchTab('dias'); selectDay(day.id); });
+    m.addTo(map);
+  });
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  map.flyToBounds(SA_BOUNDS, { padding:[60,60], duration:1.2 });
+});
+
+// ── TABS ──
+let curDay = DAYS[0].id;
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + tab));
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+// ── GERAL ──
+(function() {
+  const c = document.getElementById('pane-geral');
+  c.innerHTML = ['safari','capetown','garden','extra'].map(ph =>
+    `<div>
+      <div class="g-phase ${ph}">${Ph[ph].label}</div>
+      ${DAYS.filter(d => d.phase === ph).map(d =>
+        `<div class="g-row" data-id="${d.id}">
+          <span class="num">${d.label}</span>
+          <div class="body"><div class="ttl">${d.title}</div><div class="dt">${d.date}</div></div>
+          <div class="dot" style="background:${Ph[d.phase].color}"></div>
+        </div>`).join('')}
+    </div>`).join('');
+  c.querySelectorAll('.g-row').forEach(r =>
+    r.addEventListener('click', () => { switchTab('dias'); selectDay(parseInt(r.dataset.id)); }));
+})();
+
+// ── DIAS ──
+(function() {
+  const c = document.getElementById('pane-dias');
+  c.innerHTML = `<div class="d-pills">${DAYS.map(d => `<button class="pill" data-id="${d.id}">${d.label}</button>`).join('')}</div><div id="d-body"></div>`;
+  c.querySelectorAll('.pill').forEach(p => p.addEventListener('click', () => selectDay(parseInt(p.dataset.id))));
+})();
+
+function selectDay(id) {
+  curDay = id;
+  const day = DAYS.find(d => d.id === id);
+  if (!day) return;
+  const color = Ph[day.phase].color;
+
+  document.querySelectorAll('.pill').forEach(p => p.classList.toggle('on', parseInt(p.dataset.id) === id));
+  document.querySelectorAll('.g-row').forEach(r => r.classList.toggle('on', parseInt(r.dataset.id) === id));
+
+  const body = document.getElementById('d-body');
+  if (body) {
+    body.innerHTML = `<div class="d-detail">
+      <div class="d-detail-top">
+        <div class="d-phase-tag" style="color:${color}">
+          <span style="width:5px;height:5px;border-radius:50%;background:${color};display:inline-block"></span>
+          ${Ph[day.phase].label}
+        </div>
+        <div class="d-ttl">${day.title}</div>
+        <div class="d-date">${day.date}</div>
+        ${day.note ? `<div class="d-note">${day.note}</div>` : ''}
+      </div>
+      ${day.pontos.map(p =>
+        `<div class="pcard" data-lat="${p.lat}" data-lng="${p.lng}">
+          <div class="pname">
+            <span style="width:5px;height:5px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
+            ${p.name}
+          </div>
+          <div class="pinfo">${p.info}</div>
+        </div>`).join('')}
+    </div>`;
+
+    body.querySelectorAll('.pcard').forEach(card => {
+      card.addEventListener('click', () => {
+        body.querySelectorAll('.pcard').forEach(c => c.classList.remove('on'));
+        card.classList.add('on');
+        map.flyTo([parseFloat(card.dataset.lat), parseFloat(card.dataset.lng)], 12, { duration:1.2 });
+      });
+    });
+  }
+
+  const pts = day.pontos.filter(p => p.lat > -36 && p.lng > 15);
+  if (pts.length === 1) {
+    map.flyTo([pts[0].lat, pts[0].lng], 10, { duration:1.2 });
+  } else if (pts.length > 1) {
+    const lats = pts.map(p => p.lat), lngs = pts.map(p => p.lng);
+    map.flyToBounds(
+      L.latLngBounds([[Math.min(...lats)-.4, Math.min(...lngs)-.4],[Math.max(...lats)+.4, Math.max(...lngs)+.4]]),
+      { padding:[80,80], duration:1.2, maxZoom:12 }
+    );
+  }
+}
+
+// ── LISTA ──
+(function() {
+  const c = document.getElementById('pane-lista');
+  c.innerHTML = ['safari','capetown','garden','extra'].map(ph => {
+    const items = DAYS.filter(d => d.phase === ph).flatMap(d => d.pontos.map(p => ({ ...p, lbl:d.label })));
+    return `<div class="l-section ${ph}">${Ph[ph].label}</div>
+      ${items.map(p =>
+        `<div class="l-item" data-lat="${p.lat}" data-lng="${p.lng}">
+          <div class="l-dot" style="background:${Ph[ph].color}"></div>
+          <div><div class="l-name">${p.name}</div><div class="l-meta">${p.lbl} · ${p.info}</div></div>
+        </div>`).join('')}`;
+  }).join('');
+  c.querySelectorAll('.l-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const lat = parseFloat(item.dataset.lat), lng = parseFloat(item.dataset.lng);
+      if (lat > -36 && lng > 15) map.flyTo([lat, lng], 12, { duration:1.2 });
+    });
+  });
+})();
+
+selectDay(DAYS[0].id);
+
+// Force Leaflet to recalculate size after fonts load
+window.addEventListener('load', () => map.invalidateSize());
+</script>
+</body>
+</html>
