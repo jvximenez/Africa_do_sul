@@ -358,12 +358,15 @@ body {
     height: 100dvh;
     min-height: -webkit-fill-available;
   }
+  /* Safe area no topo do ecrã aplica-se ao mapa (faixa superior), não ao #hdr —
+     que em mobile fica por baixo do mapa; inset no hdr criava faixa escura “morta”. */
   #map-wrap {
     flex: 0 0 auto;
     height: clamp(152px, 28dvh, 220px);
     max-height: 32vh;
     border-bottom: 1px solid var(--border);
     padding-right: 0;
+    padding-top: env(safe-area-inset-top, 0px);
   }
   #sidebar {
     flex: 1 1 0;
@@ -376,7 +379,7 @@ body {
     padding-left: 0;
   }
   #hdr {
-    padding: calc(6px + env(safe-area-inset-top)) 10px 8px;
+    padding: 8px 10px 8px;
     border-bottom-color: rgba(255,255,255,0.05);
   }
   #hdr::before { opacity: 0.22; }
@@ -493,7 +496,7 @@ body {
   .l-name { font-size: 11px; }
   .l-meta { font-size: 9px; margin-top: 2px; }
   .map-btn {
-    top: calc(6px + env(safe-area-inset-top));
+    top: 6px;
     right: calc(6px + env(safe-area-inset-right));
     padding: 8px 12px;
     min-height: 40px;
@@ -1110,7 +1113,7 @@ window.addEventListener('resize', function () {
 (function debugLayout839891() {
   var END = 'http://127.0.0.1:7452/ingest/3b0b65c5-f73e-4783-a936-72a2ccadeaaf';
   function dbg(loc, msg, data, hypothesisId) {
-    fetch(END, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '839891' }, body: JSON.stringify({ sessionId: '839891', runId: 'pre-fix', location: loc, message: msg, data: data || {}, timestamp: Date.now(), hypothesisId: hypothesisId || '' }) }).catch(function () {});
+    fetch(END, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '839891' }, body: JSON.stringify({ sessionId: '839891', runId: 'post-fix', location: loc, message: msg, data: data || {}, timestamp: Date.now(), hypothesisId: hypothesisId || '' }) }).catch(function () {});
   }
   function measure() {
     var app = document.getElementById('app');
@@ -1119,10 +1122,21 @@ window.addEventListener('resize', function () {
     var hdr = document.getElementById('hdr');
     var ft = document.querySelector('.site-ft');
     var sb = document.getElementById('sidebar');
-    var lc = mEl ? mEl.querySelector('.leaflet-container') : null;
+    var lc = mEl && (mEl.classList.contains('leaflet-container') ? mEl : mEl.querySelector('.leaflet-container'));
     var mwRect = mw ? mw.getBoundingClientRect() : null;
     var hdrRect = hdr ? hdr.getBoundingClientRect() : null;
+    var h1 = hdr ? hdr.querySelector('h1') : null;
+    var h1Rect = h1 ? h1.getBoundingClientRect() : null;
     var gapMapHdr = mwRect && hdrRect ? hdrRect.top - mwRect.bottom : null;
+    var gapMapToH1 = mwRect && h1Rect ? h1Rect.top - mwRect.bottom : null;
+    var safeTopProbe = (function () {
+      var t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top);visibility:hidden;pointer-events:none';
+      document.body.appendChild(t);
+      var h = t.offsetHeight;
+      document.body.removeChild(t);
+      return h;
+    })();
     var innerH = window.innerHeight;
     var appRect = app ? app.getBoundingClientRect() : null;
     var vv = window.visualViewport;
@@ -1134,6 +1148,9 @@ window.addEventListener('resize', function () {
     }, 'H1');
     dbg('index.html:debugLayout', 'map-wrap-to-hdr', {
       gapMapHdr: gapMapHdr,
+      gapMapToH1: gapMapToH1,
+      hdrPadTop: hdr ? getComputedStyle(hdr).paddingTop : null,
+      safeAreaInsetTopPx: safeTopProbe,
       mapWrapBottom: mwRect ? mwRect.bottom : null,
       hdrTop: hdrRect ? hdrRect.top : null
     }, 'H2');
